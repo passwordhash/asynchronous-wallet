@@ -11,13 +11,22 @@ type WalletOperator interface {
 	Withdraw(ctx context.Context, walletID string, amount int64) error
 }
 
-type Handler struct {
-	walletSvc WalletOperator
+type BalanceProvider interface {
+	Balance(ctx context.Context, walletID string) (int64, error)
 }
 
-func New(walletSvc WalletOperator) *Handler {
+type Handler struct {
+	walletSvc       WalletOperator
+	balanceProvider BalanceProvider
+}
+
+func New(
+	walletSvc WalletOperator,
+	balanceProvider BalanceProvider,
+) *Handler {
 	return &Handler{
-		walletSvc: walletSvc,
+		walletSvc:       walletSvc,
+		balanceProvider: balanceProvider,
 	}
 }
 
@@ -25,5 +34,13 @@ func (h *Handler) RegisterRoutes(base *gin.RouterGroup) {
 	walletGroup := base.Group("/wallet")
 	{
 		walletGroup.POST("", h.operation)
+	}
+
+	walletsGroup := base.Group("/wallets")
+	{
+		walletIDGroup := walletsGroup.Group("/:id")
+		{
+			walletIDGroup.GET("", h.balance)
+		}
 	}
 }
