@@ -12,8 +12,8 @@ const (
 
 type operationReq struct {
 	WalletID      string `json:"walletId" binding:"required,uuid"`
-	Amount        int64  `json:"amount" binding:"required,min=1"`
 	OperationType string `json:"operationType" binding:"required,oneof=deposit withdraw"`
+	Amount        int64  `json:"amount" binding:"required,min=1"`
 }
 
 type operationResp struct {

@@ -6,27 +6,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type WalletOperator interface {
+type WalletService interface {
 	Deposit(ctx context.Context, walletID string, amount int64) error
 	Withdraw(ctx context.Context, walletID string, amount int64) error
-}
-
-type BalanceProvider interface {
 	Balance(ctx context.Context, walletID string) (int64, error)
 }
 
 type Handler struct {
-	walletSvc       WalletOperator
-	balanceProvider BalanceProvider
+	walletSvc WalletService
 }
 
 func New(
-	walletSvc WalletOperator,
-	balanceProvider BalanceProvider,
+	walletSvc WalletService,
 ) *Handler {
 	return &Handler{
-		walletSvc:       walletSvc,
-		balanceProvider: balanceProvider,
+		walletSvc: walletSvc,
 	}
 }
 

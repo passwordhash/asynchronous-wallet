@@ -5,3 +5,7 @@ http:
   port: 8080
   write_timeout: 5s
   read_timeout: 5s
+
+postgres:
+  host: localhost
+  port: 5432

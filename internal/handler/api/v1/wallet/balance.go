@@ -21,7 +21,7 @@ func (h *Handler) balance(c *gin.Context) {
 		return
 	}
 
-	amount, err := h.balanceProvider.Balance(c.Request.Context(), req.WalletID)
+	amount, err := h.walletSvc.Balance(c.Request.Context(), req.WalletID)
 	if err != nil {
 		response.BadRequest(c, response.ErrCodeInvalidRequest, "Failed to retrieve balance", err.Error())
 		return

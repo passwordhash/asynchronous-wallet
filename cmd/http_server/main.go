@@ -13,6 +13,7 @@ import (
 
 // TODO: Make shutdown timeout configurable
 // TODO: Logging middleware
+// TODO: Pass request ID to the logger (e.g. using context)
 
 const shutdownTimeout = 5 * time.Second
 

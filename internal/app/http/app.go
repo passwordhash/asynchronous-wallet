@@ -11,10 +11,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/passwordhash/asynchronous-wallet/internal/config"
 	walletHandler "github.com/passwordhash/asynchronous-wallet/internal/handler/api/v1/wallet"
+	walletSvc "github.com/passwordhash/asynchronous-wallet/internal/service/wallet"
 )
 
 type App struct {
-	log *slog.Logger
+	log       *slog.Logger
+	walletSvc *walletSvc.Service
 
 	port         int
 	readTimeout  time.Duration
@@ -27,9 +29,11 @@ func New(
 	_ context.Context,
 	log *slog.Logger,
 	cfg config.HttpConfig,
+	walletSvc *walletSvc.Service,
 ) *App {
 	return &App{
-		log: log,
+		log:       log,
+		walletSvc: walletSvc,
 
 		port:         cfg.Port,
 		readTimeout:  cfg.ReadTimeout,
@@ -54,11 +58,13 @@ func (a *App) Run() error {
 		slog.Int("port", a.port),
 	)
 
-	walletHandler := walletHandler.New()
+	walletHandler := walletHandler.New(a.walletSvc)
+
 	app := gin.New()
+	app.Use(gin.Recovery())
 
 	api := app.Group("/api")
-	v1 := api.Group("/api/v1")
+	v1 := api.Group("/v1")
 
 	walletHandler.RegisterRoutes(v1)
 

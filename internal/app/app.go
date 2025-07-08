@@ -6,6 +6,7 @@ import (
 
 	httpApp "github.com/passwordhash/asynchronous-wallet/internal/app/http"
 	"github.com/passwordhash/asynchronous-wallet/internal/config"
+	walletSvc "github.com/passwordhash/asynchronous-wallet/internal/service/wallet"
 	postgresPkg "github.com/passwordhash/asynchronous-wallet/pkg/postgres"
 )
 
@@ -23,10 +24,15 @@ func New(
 		panic("failed to create postgres pool: " + err.Error())
 	}
 
+	walletService := walletSvc.New(
+		log.WithGroup("wallet_service"),
+	)
+
 	httpApp := httpApp.New(
 		ctx,
 		log,
 		cfg.HTTP,
+		walletService,
 	)
 
 	return &App{
