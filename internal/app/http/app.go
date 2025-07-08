@@ -8,7 +8,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/passwordhash/asynchronous-wallet/internal/config"
+	walletHandler "github.com/passwordhash/asynchronous-wallet/internal/handler/api/v1/wallet"
 )
 
 type App struct {
@@ -52,17 +54,23 @@ func (a *App) Run() error {
 		slog.Int("port", a.port),
 	)
 
-	log.Info("Starting HTTP server")
+	walletHandler := walletHandler.New()
+	app := gin.New()
 
-	mux := http.NewServeMux()
+	api := app.Group("/api")
+	v1 := api.Group("/api/v1")
+
+	walletHandler.RegisterRoutes(v1)
 
 	srv := &http.Server{
 		Addr:         ":" + strconv.Itoa(a.port),
-		Handler:      mux,
+		Handler:      app,
 		ReadTimeout:  a.readTimeout,
 		WriteTimeout: a.writeTimeout,
 	}
 	a.server = srv
+
+	log.Info("Starting HTTP server")
 
 	return srv.ListenAndServe()
 }

@@ -1,2 +1,2 @@
-# JWT auth base
+# Asynchronous Wallet Service
 
