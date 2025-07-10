@@ -1,4 +1,4 @@
-INSERT INTO wallets (id, balance) VALUES
-('b1a8c0d2-3f4e-4b5c-8d9e-0f1a2b3c4d5e', 1000),
-('c2b9a8d7-6e5f-4a3b-8c9d-0e1f2a3b4c5d', 2000),
-('d3c8b7a6-5e4f-3a2b-8c9d-0e1f2a3b4c5d', 3000);
+INSERT INTO wallets (id, balance, updated_at) VALUES
+('11111111-2b2b-4c4c-8d8d-0e0e1f2a3b4c', 500, CURRENT_TIMESTAMP),
+('22222222-3c3c-5d5d-8e8e-0f0f1a2b3c4d', 1500, CURRENT_TIMESTAMP),
+('33333333-4d4d-6e6e-8f8f-0a0b1c2d3e4f', 2500, CURRENT_TIMESTAMP);

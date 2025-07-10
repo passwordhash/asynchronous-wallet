@@ -32,6 +32,8 @@ type PostgresConfig struct {
 	Password string `env:"POSTGRES_PASSWORD" yaml:"password" env-required:"true"`
 	Database string `env:"POSTGRES_DB" yaml:"database" env-required:"true"`
 	SSLMode  string `env:"POSTGRES_SSLMODE" yaml:"sslmode" env-default:"disable"`
+
+	MaxConns int32 `env:"POSTGRES_MAX_CONNS" yaml:"max_conns" env-required:"true"`
 }
 
 func (p PostgresConfig) DSN() string {

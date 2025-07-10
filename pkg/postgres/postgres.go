@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -37,4 +38,8 @@ func NewPool(ctx context.Context, dsn string, opts ...Option) (*pgxpool.Pool, er
 	}
 
 	return pool, nil
+}
+
+type Queryer interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 }

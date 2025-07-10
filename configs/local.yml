@@ -9,3 +9,4 @@ http:
 postgres:
   host: localhost
   port: 5432
+  max_conns: 15

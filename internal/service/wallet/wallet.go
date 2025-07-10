@@ -2,13 +2,18 @@ package wallet
 
 import (
 	"context"
+	"errors"
 	"log/slog"
+
+	"github.com/google/uuid"
+	"github.com/passwordhash/asynchronous-wallet/internal/entity"
+	svcErr "github.com/passwordhash/asynchronous-wallet/internal/service/errors"
+	repoErr "github.com/passwordhash/asynchronous-wallet/internal/storage/errors"
 )
 
 type WalletRepository interface {
-	Deposit(ctx context.Context, walletID string, amount int64) error
-	Withdraw(ctx context.Context, walletID string, amount int64) error
-	Balance(ctx context.Context, walletID string) (int64, error)
+	Operation(ctx context.Context, walletID string, amount int64) error
+	GetByID(ctx context.Context, walletID string) (*entity.Wallet, error)
 }
 
 type Service struct {
@@ -35,13 +40,11 @@ func (s *Service) Deposit(ctx context.Context, walletID string, amount int64) er
 		"amount", amount,
 	)
 
-	err := s.repo.Deposit(ctx, walletID, amount)
-	// TODO: handler specific errors
-	if err != nil {
-		log.Error("failed to deposit", "err", err)
-
+	if err := s.updateBalance(ctx, log, walletID, amount); err != nil {
 		return err
 	}
+
+	log.Info("deposit successful")
 
 	return nil
 }
@@ -55,11 +58,7 @@ func (s *Service) Withdraw(ctx context.Context, walletID string, amount int64) e
 		"amount", amount,
 	)
 
-	err := s.repo.Withdraw(ctx, walletID, amount)
-	// TODO: handler specific errors
-	if err != nil {
-		log.Error("failed to withdraw", "err", err)
-
+	if err := s.updateBalance(ctx, log, walletID, -amount); err != nil {
 		return err
 	}
 
@@ -76,14 +75,46 @@ func (s *Service) Balance(ctx context.Context, walletID string) (int64, error) {
 		"walletID", walletID,
 	)
 
-	balance, err := s.repo.Balance(ctx, walletID)
+	wallet, err := s.repo.GetByID(ctx, walletID)
 	if err != nil {
 		log.Error("failed to get balance", "err", err)
 
 		return 0, err
 	}
 
-	log.Info("balance retrieved successfully")
+	log.Info("wallet balance retrieved")
 
-	return balance, nil
+	return wallet.Balance, nil
+}
+
+func (s *Service) updateBalance(ctx context.Context, log *slog.Logger, walletID string, amount int64) error {
+	if err := validate(walletID, amount); err != nil {
+		log.Error("invalid parameters", "err", err)
+
+		return svcErr.ErrInvalidParams
+	}
+
+	err := s.repo.Operation(ctx, walletID, amount)
+	if errors.Is(err, repoErr.ErrWalletNotFound) {
+		log.Warn("wallet not found", "err", err)
+
+		return svcErr.ErrWalletNotFound
+	}
+	if err != nil {
+		log.Error("failed to update balance", "err", err)
+
+		return err
+	}
+
+	return nil
+}
+
+func validate(walletID string, amount int64) error {
+	if uuid.Validate(walletID) != nil {
+		return svcErr.ErrInvalidParams
+	}
+	if amount <= 0 {
+		return svcErr.ErrInvalidParams
+	}
+	return nil
 }

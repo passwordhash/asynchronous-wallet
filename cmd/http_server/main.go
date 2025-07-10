@@ -11,11 +11,10 @@ import (
 	"github.com/passwordhash/asynchronous-wallet/internal/config"
 )
 
-// TODO: Make shutdown timeout configurable
 // TODO: Logging middleware
 // TODO: Pass request ID to the logger (e.g. using context)
 
-const shutdownTimeout = 5 * time.Second
+const shutdownTimeout = 5 * time.Second // max time to wait for graceful shutdown
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(),
