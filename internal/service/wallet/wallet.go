@@ -40,7 +40,21 @@ func (s *Service) Deposit(ctx context.Context, walletID string, amount int64) er
 		"amount", amount,
 	)
 
-	if err := s.updateBalance(ctx, log, walletID, amount); err != nil {
+	if err := validate(walletID, amount); err != nil {
+		log.Error("invalid parameters", "err", err)
+
+		return svcErr.ErrInvalidParams
+	}
+
+	err := s.repo.Operation(ctx, walletID, amount)
+	if errors.Is(err, repoErr.ErrWalletNotFound) {
+		log.Warn("wallet not found", "err", err)
+
+		return svcErr.ErrWalletNotFound
+	}
+	if err != nil {
+		log.Error("failed to update balance", "err", err)
+
 		return err
 	}
 
@@ -58,7 +72,21 @@ func (s *Service) Withdraw(ctx context.Context, walletID string, amount int64) e
 		"amount", amount,
 	)
 
-	if err := s.updateBalance(ctx, log, walletID, -amount); err != nil {
+	if err := validate(walletID, amount); err != nil {
+		log.Error("invalid parameters", "err", err)
+
+		return svcErr.ErrInvalidParams
+	}
+
+	err := s.repo.Operation(ctx, walletID, -amount)
+	if errors.Is(err, repoErr.ErrWalletNotFound) {
+		log.Warn("wallet not found", "err", err)
+
+		return svcErr.ErrWalletNotFound
+	}
+	if err != nil {
+		log.Error("failed to update balance", "err", err)
+
 		return err
 	}
 
@@ -85,28 +113,6 @@ func (s *Service) Balance(ctx context.Context, walletID string) (int64, error) {
 	log.Info("wallet balance retrieved")
 
 	return wallet.Balance, nil
-}
-
-func (s *Service) updateBalance(ctx context.Context, log *slog.Logger, walletID string, amount int64) error {
-	if err := validate(walletID, amount); err != nil {
-		log.Error("invalid parameters", "err", err)
-
-		return svcErr.ErrInvalidParams
-	}
-
-	err := s.repo.Operation(ctx, walletID, amount)
-	if errors.Is(err, repoErr.ErrWalletNotFound) {
-		log.Warn("wallet not found", "err", err)
-
-		return svcErr.ErrWalletNotFound
-	}
-	if err != nil {
-		log.Error("failed to update balance", "err", err)
-
-		return err
-	}
-
-	return nil
 }
 
 func validate(walletID string, amount int64) error {
