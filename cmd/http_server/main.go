@@ -13,6 +13,8 @@ import (
 
 // TODO: Logging middleware
 // TODO: Pass request ID to the logger (e.g. using context)
+// TODO: Stress tests (1000 rps/sec for 1 minute)
+// TODO: Swagger documentation
 
 const shutdownTimeout = 5 * time.Second // max time to wait for graceful shutdown
 

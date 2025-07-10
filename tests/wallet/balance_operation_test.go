@@ -2,9 +2,13 @@ package wallet_test
 
 import (
 	"net/url"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/gavv/httpexpect/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var u = url.URL{
@@ -38,9 +42,7 @@ func TestBalanceOperation_Ok(t *testing.T) {
 
 		newBalance := getBalance(t, e, walletID)
 
-		if newBalance != expectedBalance {
-			t.Errorf("Expected balance %d, got %d", expectedBalance, newBalance)
-		}
+		assert.Equal(t, expectedBalance, newBalance, "Balance should be increased by the deposit amount")
 	})
 
 	t.Run("Withdraw Operation", func(t *testing.T) {
@@ -52,9 +54,7 @@ func TestBalanceOperation_Ok(t *testing.T) {
 
 		newBalance := getBalance(t, e, walletID)
 
-		if newBalance != expectedBalance {
-			t.Errorf("Expected balance %d, got %d", expectedBalance, newBalance)
-		}
+		assert.Equal(t, expectedBalance, newBalance, "Balance should be decreased by the withdrawal amount")
 	})
 
 	t.Run("Deposit and Withdraw", func(t *testing.T) {
@@ -68,9 +68,7 @@ func TestBalanceOperation_Ok(t *testing.T) {
 
 		newBalance := getBalance(t, e, walletID)
 
-		if newBalance != expectedBalance {
-			t.Errorf("Expected balance %d, got %d", expectedBalance, newBalance)
-		}
+		assert.Equal(t, expectedBalance, newBalance, "Balance should reflect both deposit and withdrawal")
 	})
 }
 
@@ -142,6 +140,61 @@ func TestBalanceOperation_Error(t *testing.T) {
 	})
 }
 
+func TestBalanceOperation_EdgeCases(t *testing.T) {
+	e := httpexpect.Default(t, u.String())
+
+	t.Run("Minimum operation amount", func(t *testing.T) {
+		initialBalance := getBalance(t, e, walletID)
+		minAmount := int64(1)
+
+		mustSuccessOperationReq(t, e, walletID, depositOperation, minAmount)
+		newBalance := getBalance(t, e, walletID)
+		assert.Equal(t, initialBalance+minAmount, newBalance, "Balance should be updated with minimum deposit")
+
+		mustSuccessOperationReq(t, e, walletID, withdrawOperation, minAmount)
+		newBalance = getBalance(t, e, walletID)
+		assert.Equal(t, initialBalance, newBalance, "Balance should be restored after minimum withdrawal")
+	})
+
+	// TODO: Add more edge cases as needed as it business logic evolves
+}
+
+func TestBalanceOperation_Concurrent(t *testing.T) {
+	// Test 1000 rps/sec
+	e := httpexpect.Default(t, u.String())
+
+	const numOperationPairs = 500
+
+	depositAmount := int64(11)
+	withdrawAmount := int64(10)
+
+	balanceOnStart := getBalance(t, e, walletID)
+	difference := atomic.Int64{}
+	expectedBalance := balanceOnStart + int64(numOperationPairs)*(depositAmount-withdrawAmount)
+
+	wg := sync.WaitGroup{}
+
+	wg.Add(numOperationPairs * 2) // Each pair consists of a deposit and a withdraw operation
+	for range numOperationPairs {
+		go func() {
+			defer wg.Done()
+			mustSuccessOperationReq(t, e, walletID, depositOperation, depositAmount)
+			difference.Add(depositAmount)
+		}()
+
+		go func() {
+			defer wg.Done()
+			mustSuccessOperationReq(t, e, walletID, withdrawOperation, withdrawAmount)
+			difference.Add(-withdrawAmount)
+		}()
+	}
+
+	wg.Wait()
+
+	require.Equal(t, expectedBalance, balanceOnStart+difference.Load(),
+		"Final balance should match expected after concurrent operations")
+}
+
 func mustSuccessOperationReq(t *testing.T, e *httpexpect.Expect, walletID, operationType string, amount int64) {
 	var resp operationResp
 	operationReq(e, walletID, operationType, amount).
@@ -152,9 +205,7 @@ func mustSuccessOperationReq(t *testing.T, e *httpexpect.Expect, walletID, opera
 		NotContainsKey("error").
 		Decode(&resp)
 
-	if resp.Error != nil {
-		t.Fatalf("Operation %s returned error: %v", operationType, resp.Error)
-	}
+	require.Nil(t, resp.Error, "Operation %s should not return an error", operationType)
 }
 
 func operationReq(e *httpexpect.Expect, walletID, operationType string, amount int64) *httpexpect.Response {
