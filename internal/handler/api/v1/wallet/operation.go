@@ -1,8 +1,11 @@
 package wallet
 
 import (
+	"errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/passwordhash/asynchronous-wallet/internal/handler/api/v1/response"
+	svcErr "github.com/passwordhash/asynchronous-wallet/internal/service/errors"
 )
 
 const (
@@ -29,14 +32,14 @@ func (h *Handler) operation(c *gin.Context) {
 
 	switch req.OperationType {
 	case depositOperation:
-		if err := h.walletSvc.Deposit(c.Request.Context(), req.WalletID, req.Amount); err != nil {
-			response.BadRequest(c, response.ErrCodeInvalidRequest, "Failed to deposit amount", err.Error())
+		err := h.walletSvc.Deposit(c.Request.Context(), req.WalletID, req.Amount)
+		if isErr := handleServiceError(c, err); isErr {
 			return
 		}
 		response.Success(c, 200, operationResp{Message: "Deposit successful"})
 	case withdrawOperation:
-		if err := h.walletSvc.Withdraw(c.Request.Context(), req.WalletID, req.Amount); err != nil {
-			response.BadRequest(c, response.ErrCodeInvalidRequest, "Failed to withdraw amount", err.Error())
+		err := h.walletSvc.Withdraw(c.Request.Context(), req.WalletID, req.Amount)
+		if isErr := handleServiceError(c, err); isErr {
 			return
 		}
 		response.Success(c, 200, operationResp{Message: "Withdrawal successful"})
@@ -44,4 +47,21 @@ func (h *Handler) operation(c *gin.Context) {
 		response.BadRequest(c, response.ErrCodeInvalidRequest, "Invalid operation type", "Must be either 'deposit' or 'withdraw'")
 		return
 	}
+}
+
+func handleServiceError(c *gin.Context, err error) bool {
+	if err == nil {
+		return false
+	}
+
+	switch {
+	case errors.Is(err, svcErr.ErrInvalidParams):
+		response.ValidationError(c, "Invalid parameters provided")
+	case errors.Is(err, svcErr.ErrWalletNotFound):
+		response.NotFound(c, "Wallet not found")
+	default:
+		response.InternalError(c, "Internal server error")
+	}
+
+	return true
 }

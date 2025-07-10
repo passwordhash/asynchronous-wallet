@@ -46,3 +46,23 @@ func BadRequest(c *gin.Context, code, message, details string) {
 func ValidationError(c *gin.Context, details string) {
 	BadRequest(c, ErrCodeValidation, "Request parameters are invalid", details)
 }
+
+func NotFound(c *gin.Context, message string) {
+	c.JSON(http.StatusNotFound, Response{
+		Success: false,
+		Error: &Error{
+			Code:    ErrCodeNotFound,
+			Message: message,
+		},
+	})
+}
+
+func InternalError(c *gin.Context, message string) {
+	c.JSON(http.StatusInternalServerError, Response{
+		Success: false,
+		Error: &Error{
+			Code:    ErrCodeInternalServer,
+			Message: message,
+		},
+	})
+}

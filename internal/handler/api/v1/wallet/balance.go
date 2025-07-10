@@ -1,8 +1,11 @@
 package wallet
 
 import (
+	"errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/passwordhash/asynchronous-wallet/internal/handler/api/v1/response"
+	svcErr "github.com/passwordhash/asynchronous-wallet/internal/service/errors"
 )
 
 type balanceReq struct {
@@ -22,6 +25,9 @@ func (h *Handler) balance(c *gin.Context) {
 	}
 
 	amount, err := h.walletSvc.Balance(c.Request.Context(), req.WalletID)
+	if errors.Is(err, svcErr.ErrWalletNotFound) {
+		response.NotFound(c, "Wallet not found")
+	}
 	if err != nil {
 		response.BadRequest(c, response.ErrCodeInvalidRequest, "Failed to retrieve balance", err.Error())
 		return
