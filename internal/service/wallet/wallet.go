@@ -6,24 +6,26 @@ import (
 	"log/slog"
 
 	"github.com/google/uuid"
+
 	"github.com/passwordhash/asynchronous-wallet/internal/entity"
 	svcErr "github.com/passwordhash/asynchronous-wallet/internal/service/errors"
 	repoErr "github.com/passwordhash/asynchronous-wallet/internal/storage/errors"
 )
 
-type WalletRepository interface {
+//go:generate mockgen -destination=./mocks/mock_repository.go -package=mocks github.com/passwordhash/asynchronous-wallet/internal/service/wallet Repository
+type Repository interface {
 	Operation(ctx context.Context, walletID string, amount int64) error
 	GetByID(ctx context.Context, walletID string) (*entity.Wallet, error)
 }
 
 type Service struct {
 	log  *slog.Logger
-	repo WalletRepository
+	repo Repository
 }
 
 func New(
 	log *slog.Logger,
-	repo WalletRepository,
+	repo Repository,
 ) *Service {
 	return &Service{
 		log:  log,
@@ -102,6 +104,12 @@ func (s *Service) Balance(ctx context.Context, walletID string) (int64, error) {
 		"op", op,
 		"walletID", walletID,
 	)
+
+	if uuid.Validate(walletID) != nil {
+		log.Warn("invalid wallet ID format", "walletID", walletID)
+
+		return 0, svcErr.ErrInvalidParams
+	}
 
 	wallet, err := s.repo.GetByID(ctx, walletID)
 	if err != nil {
