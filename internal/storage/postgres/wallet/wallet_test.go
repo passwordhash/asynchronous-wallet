@@ -6,9 +6,10 @@ import (
 	"time"
 
 	"github.com/pashagolub/pgxmock/v4"
+	"github.com/stretchr/testify/require"
+
 	"github.com/passwordhash/asynchronous-wallet/internal/entity"
 	repoErr "github.com/passwordhash/asynchronous-wallet/internal/storage/errors"
-	"github.com/stretchr/testify/require"
 )
 
 var walletColumns = []string{"id", "balance", "updated_at", "created_at"}
@@ -31,6 +32,8 @@ func TestOperation(t *testing.T) {
 
 	const getQuery = `SELECT.*FROM wallets WHERE id = \$1 FOR UPDATE`
 	const updateQuery = `UPDATE wallets SET balance = \$1, updated_at = NOW\(\) WHERE id = \$2`
+
+	updErr := errors.New("update error")
 
 	tests := []struct {
 		name          string
@@ -98,10 +101,10 @@ func TestOperation(t *testing.T) {
 						AddRow("test-wallet-id", 100, time.Time{}, time.Time{}))
 				mock.ExpectExec(updateQuery).
 					WithArgs(int64(150), "test-wallet-id").
-					WillReturnError(errors.New("update error"))
+					WillReturnError(updErr)
 				mock.ExpectRollback()
 			},
-			expectedError: errors.New("update error"),
+			expectedError: updErr,
 		},
 	}
 
