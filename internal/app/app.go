@@ -32,7 +32,7 @@ func New(
 		walletRepository,
 	)
 
-	httpApp := httpApp.New(
+	httpSrv := httpApp.New(
 		ctx,
 		log,
 		cfg.HTTP,
@@ -40,6 +40,6 @@ func New(
 	)
 
 	return &App{
-		HTTPSrv: httpApp,
+		HTTPSrv: httpSrv,
 	}
 }

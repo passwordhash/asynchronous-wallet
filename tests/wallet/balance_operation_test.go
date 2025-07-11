@@ -1,7 +1,9 @@
 package wallet_test
 
 import (
+	"fmt"
 	"net/url"
+	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -11,10 +13,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var u = url.URL{
-	Scheme: "http",
-	Host:   "localhost:8080",
-	Path:   "/api/v1/",
+var u url.URL
+
+func init() {
+	port := "8080"
+	if p := os.Getenv("APP_OUT_PORT"); p != "" {
+		port = p
+	}
+
+	u = url.URL{
+		Scheme: "http",
+		Host:   fmt.Sprintf("localhost:%s", port),
+		Path:   "/api/v1/",
+	}
 }
 
 const (
@@ -216,11 +227,11 @@ func operationReq(e *httpexpect.Expect, walletID, operationType string, amount i
 	}
 
 	return e.POST("/wallet", walletID).
-		WithJSON(operationReq{
-			WalletID:      walletID,
-			OperationType: operationType,
-			Amount:        amount,
-		}).
+	    WithJSON(operationReq{
+		    WalletID:      walletID,
+		    OperationType: operationType,
+		    Amount:        amount,
+	    }).
 		Expect()
 }
 

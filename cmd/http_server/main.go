@@ -11,6 +11,9 @@ import (
 	"github.com/passwordhash/asynchronous-wallet/internal/config"
 )
 
+// TODO: readme
+// TODO: doc api
+
 const shutdownTimeout = 5 * time.Second // max time to wait for graceful shutdown
 
 func main() {

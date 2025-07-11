@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/passwordhash/asynchronous-wallet/internal/config"
 	walletHandler "github.com/passwordhash/asynchronous-wallet/internal/handler/api/v1/wallet"
 	walletSvc "github.com/passwordhash/asynchronous-wallet/internal/service/wallet"
@@ -58,15 +59,19 @@ func (a *App) Run() error {
 		slog.Int("port", a.port),
 	)
 
-	walletHandler := walletHandler.New(a.walletSvc)
+	walletHlr := walletHandler.New(a.walletSvc)
 
 	app := gin.New()
 	app.Use(gin.Recovery())
 
+	app.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
 	api := app.Group("/api")
 	v1 := api.Group("/v1")
 
-	walletHandler.RegisterRoutes(v1)
+	walletHlr.RegisterRoutes(v1)
 
 	srv := &http.Server{
 		Addr:         ":" + strconv.Itoa(a.port),
